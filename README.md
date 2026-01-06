@@ -40,7 +40,7 @@ Scalable and secure SaaS design
 ✅ FastAPI application running
 ✅ PostgreSQL integration completed
 ✅ Tenant creation API implemented
-
+✅ User and JWT token creation API implemented
 
 🔮 Planned Enhancements
 
