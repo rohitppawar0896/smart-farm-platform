@@ -41,10 +41,12 @@ Scalable and secure SaaS design
 ✅ PostgreSQL integration completed
 ✅ Tenant creation API implemented
 ✅ User and JWT token creation API implemented
+✅ User authentication & JWT-based authorization
+✅ Tenant creation always assigning ownership atomically to prevent orphan tenants.
+
 
 🔮 Planned Enhancements
 
-User authentication & JWT-based authorization
 Role-based access control (RBAC)
 Farm, field, and sensor management
 Automation rules engine
