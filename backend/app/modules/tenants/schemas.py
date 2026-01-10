@@ -31,3 +31,10 @@ class RemoveUserRequest(BaseModel):
 # Transfer Ownership inputs
 class TransferOwnershipRequest(BaseModel):
     new_owner_user_id: int
+
+
+# output formt for Tenant users
+class TenantUserResponse(BaseModel):
+    user_id: int
+    email: EmailStr
+    role: TenantRole

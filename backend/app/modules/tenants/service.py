@@ -271,3 +271,27 @@ def transfer_tenant_ownership(
     return {
         "Message": "Tenant Ownership Transferred successfully"
     }
+
+
+# function to list all users present in tenant
+def list_users_in_tenants(
+        db: Session,
+        tenant_id: int
+):
+    results = (
+        db.query(User, UserTenant)
+        .join(UserTenant, User.id == UserTenant.user_id)
+        .filter(UserTenant.tenant_id == tenant_id)
+        .all()
+    )
+
+    response = []
+
+    for user, user_tenant in results:
+        response.append({
+            "user_id": user.id,
+            "email": user.email,
+            "role": user_tenant.role
+        })
+
+    return response
