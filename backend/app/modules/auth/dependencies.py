@@ -63,6 +63,7 @@ def get_tenant_context(
         )
 
     return {
+        "db": db,
         "user": current_user,
         "tenant_id": tenant_id,
         "role": membership.role.upper()

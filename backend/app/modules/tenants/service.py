@@ -1,8 +1,10 @@
 from app.modules.tenants.models import Tenant
 from app.modules.tenants.schemas import TenantCreate
 from app.modules.users.models import User, UserTenant
+from app.common.roles import TenantRole
 
 from sqlalchemy.orm import Session
+from fastapi import HTTPException, status
 
 
 def create_tenant(db: Session, tenant_data: TenantCreate, current_user: User):
@@ -51,3 +53,103 @@ def get_user_tenants(db: Session, user_id: int):
         })
 
     return response
+
+
+# add user to a tenant
+# currenly we are adding user directly.In future we can invite a user via email.
+def invite_user_to_tenant(
+    db: Session,
+    tenant_id: int,
+    email: str,
+    role: TenantRole,
+    invited_by_role: TenantRole
+):
+    # Only owner can assign OWNER role
+    if role == TenantRole.OWNER and invited_by_role != TenantRole.OWNER:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only OWNER can assign OWNER role"
+        )
+
+    user = db.query(User).filter(User.email == email).first()
+
+# check if user exists
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+
+# check if user is already part of tenant
+    existing = (
+        db.query(UserTenant).filter(
+            UserTenant.user_id == user.id,
+            UserTenant.tenant_id == tenant_id
+        )
+        .first()
+    )
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User already part of Tenant"
+        )
+
+# add mappings to add in user_tenant table
+    mapping = UserTenant(
+        user_id=user.id,
+        tenant_id=tenant_id,
+        role=role.value
+    )
+
+    db.add(mapping)
+    db.commit()
+
+    return {
+        "message": "User Invited"
+    }
+
+
+# function to change user role
+def change_user_role(
+        db: Session,
+        tenant_id: int,
+        target_user_id: int,
+        new_role: TenantRole,
+        current_user_id: int,
+        current_user_role: TenantRole
+):
+    # only owner can change role
+    if current_user_role != TenantRole.OWNER:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only Owner can change role"
+        )
+
+    # owner cannot change own role
+    if current_user_id == target_user_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Owener cannot change own role"
+        )
+
+    mapping = (
+        db.query(UserTenant)
+        .filter(
+            UserTenant.tenant_id == tenant_id,
+            UserTenant.user_id == target_user_id
+        )
+        .first()
+    )
+
+    if not mapping:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User is not part of tenant"
+        )
+
+    mapping.role = new_role
+    db.commit()
+
+    return {
+        "message": "User Role Updated successfully"
+    }

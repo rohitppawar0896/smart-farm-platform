@@ -43,11 +43,10 @@ Scalable and secure SaaS design
 ✅ User and JWT token creation API implemented
 ✅ User authentication & JWT-based authorization
 ✅ Tenant creation always assigning ownership atomically to prevent orphan tenants.
+✅ Role-based access control (RBAC)
 
 
 🔮 Planned Enhancements
-
-Role-based access control (RBAC)
 Farm, field, and sensor management
 Automation rules engine
 Dockerization & CI/CD pipeline
