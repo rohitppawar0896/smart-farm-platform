@@ -22,8 +22,12 @@ class ChangeUserRoleRequest(BaseModel):
     user_id: int
     role: TenantRole
 
+
 # Inputes to remove User
-
-
 class RemoveUserRequest(BaseModel):
     user_id: int
+
+
+# Transfer Ownership inputs
+class TransferOwnershipRequest(BaseModel):
+    new_owner_user_id: int

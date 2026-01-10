@@ -187,9 +187,87 @@ def remove_user_from_tenant(
         .first()
     )
 
+    if not mapping:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User is not part of tenant"
+        )
+
+    # prevents removing last owner
+    if mapping.role == TenantRole.OWNER:
+        owner_count = (
+            db.query(UserTenant)
+            .filter(
+                UserTenant.role == TenantRole.OWNER.value,
+                UserTenant.tenant_id == mapping.tenant_id
+            )
+            .count()
+        )
+
+        if owner_count <= 1:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot remove last Owner"
+            )
+
     db.delete(mapping)
     db.commit()
 
     return {
         "message": "User removed from Tenant"
+    }
+
+
+# fuction to transfer owenership
+def transfer_tenant_ownership(
+        db: Session,
+        tenant_id: int,
+        current_user_id: int,
+        new_owner_user_id: int,
+        current_user_role: TenantRole
+):
+    if current_user_id == new_owner_user_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot transfer ownership to yourself"
+        )
+
+    current_user = (
+        db.query(UserTenant)
+        .filter(
+            UserTenant.tenant_id == tenant_id,
+            UserTenant.user_id == current_user_id,
+            UserTenant.role == TenantRole.OWNER.value
+        )
+        .first()
+    )
+
+    if not current_user:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only Owner Can Transfer Ownership"
+        )
+
+    new_owner = (
+        db.query(UserTenant)
+        .filter(
+            UserTenant.tenant_id == tenant_id,
+            UserTenant.user_id == new_owner_user_id
+        )
+        .first()
+    )
+
+    if not new_owner:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Target user is not part of tenant"
+        )
+
+    current_user.role = TenantRole.ADMIN.value
+    new_owner.role = TenantRole.OWNER.value
+
+    db.commit()
+
+    return {
+        "Message": "Tenant Ownership Transferred successfully"
     }

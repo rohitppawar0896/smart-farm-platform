@@ -2,9 +2,9 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.modules.tenants.schemas import TenantCreate, TenantResponse, InviteUserRequest, ChangeUserRoleRequest
-from app.modules.tenants.schemas import RemoveUserRequest
+from app.modules.tenants.schemas import RemoveUserRequest, TransferOwnershipRequest
 from app.modules.tenants.service import create_tenant, get_user_tenants, invite_user_to_tenant, change_user_role
-from app.modules.tenants.service import remove_user_from_tenant
+from app.modules.tenants.service import remove_user_from_tenant, transfer_tenant_ownership
 from app.common.dependencies import get_db
 from app.modules.users.models import User
 from app.modules.auth.dependencies import get_current_user
@@ -96,5 +96,20 @@ def remove_user(
         tenant_id=context["tenant_id"],
         target_user_id=data.user_id,
         current_user_id=context["user"].id,
+        current_user_role=TenantRole(context["role"])
+    )
+
+
+# api to transfer Ownership
+@router.post("/transfer-ownership")
+def transfer_ownership(
+    data: TransferOwnershipRequest,
+    context=Depends(require_roles(TenantRole.OWNER))
+):
+    return transfer_tenant_ownership(
+        db=context["db"],
+        tenant_id=context["tenant_id"],
+        current_user_id=context["user"].id,
+        new_owner_user_id=data.new_owner_user_id,
         current_user_role=TenantRole(context["role"])
     )
