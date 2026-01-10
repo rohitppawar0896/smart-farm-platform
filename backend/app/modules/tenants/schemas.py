@@ -21,3 +21,9 @@ class InviteUserRequest(BaseModel):
 class ChangeUserRoleRequest(BaseModel):
     user_id: int
     role: TenantRole
+
+# Inputes to remove User
+
+
+class RemoveUserRequest(BaseModel):
+    user_id: int

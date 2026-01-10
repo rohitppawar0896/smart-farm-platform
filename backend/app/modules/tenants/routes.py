@@ -2,7 +2,9 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.modules.tenants.schemas import TenantCreate, TenantResponse, InviteUserRequest, ChangeUserRoleRequest
+from app.modules.tenants.schemas import RemoveUserRequest
 from app.modules.tenants.service import create_tenant, get_user_tenants, invite_user_to_tenant, change_user_role
+from app.modules.tenants.service import remove_user_from_tenant
 from app.common.dependencies import get_db
 from app.modules.users.models import User
 from app.modules.auth.dependencies import get_current_user
@@ -43,29 +45,6 @@ def get_tenant_details(
     }
 
 
-# api to delete Tenant, Only Owner can perform this
-@router.delete("/")
-def delete_tenant(
-    context=Depends(require_roles(TenantRole.OWNER))
-):
-    return {
-        "Status": "Tenant Deleted"
-    }
-
-
-# api to add a user to Tenant
-@router.post("/user")
-def add_user_to_tenant(
-    context=Depends(require_roles(
-        TenantRole.OWNER,
-        TenantRole.ADMIN
-    ))
-):
-    return {
-        "Status": "User Added"
-    }
-
-
 # list all tenants of user
 @router.get("/my/tenants")
 def list_my_tenats(
@@ -103,4 +82,19 @@ def update_user_role(
         new_role=data.role,
         current_user_id=context["user"].id,
         current_user_role=context["role"]
+    )
+
+
+# api to remove user from Tenant
+@router.delete("/user")
+def remove_user(
+    data: RemoveUserRequest,
+    context=Depends(require_roles(TenantRole.OWNER))
+):
+    return remove_user_from_tenant(
+        db=context["db"],
+        tenant_id=context["tenant_id"],
+        target_user_id=data.user_id,
+        current_user_id=context["user"].id,
+        current_user_role=TenantRole(context["role"])
     )

@@ -153,3 +153,43 @@ def change_user_role(
     return {
         "message": "User Role Updated successfully"
     }
+
+
+# Function to remove user
+def remove_user_from_tenant(
+    db: Session,
+    tenant_id: int,
+    target_user_id: int,
+    current_user_id: int,
+    current_user_role: TenantRole
+
+):
+    # only owner can remove user
+    if current_user_role != TenantRole.OWNER:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only Owener can remove users from tenant"
+        )
+
+    # Owener cananot remove Themselves
+    if current_user_id == target_user_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Owner cannot remove themselves"
+        )
+
+    mapping = (
+        db.query(UserTenant)
+        .filter(
+            UserTenant.user_id == target_user_id,
+            UserTenant.tenant_id == tenant_id
+        )
+        .first()
+    )
+
+    db.delete(mapping)
+    db.commit()
+
+    return {
+        "message": "User removed from Tenant"
+    }
