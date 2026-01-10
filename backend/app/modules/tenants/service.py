@@ -24,3 +24,30 @@ def create_tenant(db: Session, tenant_data: TenantCreate, current_user: User):
     db.commit()
     db.refresh(new_tenant)
     return new_tenant
+
+
+# Function reuturns all tenants in user belong
+def get_user_tenants(db: Session, user_id: int):
+    # fetch all tenant maps to a user
+    results = (
+        db.query(UserTenant, Tenant)
+        .join(Tenant, Tenant.id == UserTenant.tenant_id)
+        .filter(UserTenant.user_id == user_id)
+        .all()
+    )
+
+# reulsts looks like
+# [
+#  (UserTenant(...), Tenant(...)),
+#  (UserTenant(...), Tenant(...)),
+# ]
+# so we will append requred details in response and return it
+    response = []
+    for user_tenant, tenant in results:
+        response.append({
+            "tenant_id": tenant.id,
+            "tenant_name": tenant.name,
+            "role": user_tenant.role,
+        })
+
+    return response

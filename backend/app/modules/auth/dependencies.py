@@ -10,6 +10,8 @@ from app.modules.users.models import User, UserTenant
 security = HTTPBearer()
 
 
+# returns the current user by decoding bearer token.
+
 def get_current_user(
         db: Session = Depends(get_db),
         credentials: HTTPAuthorizationCredentials = Depends(security)
@@ -36,6 +38,9 @@ def get_current_user(
 
     return user
 
+
+# function returns which user belons to which tenat with what role.
+# e.g. X user belons to A tenant with R role
 
 def get_tenant_context(
     tenant_id: int = Header(..., alias="X-Tenant-ID"),
