@@ -19,7 +19,7 @@ router = APIRouter(
 
 # api to create Tenant
 @router.post("/", response_model=TenantResponse)
-def create_tenant(
+def create_tenant_api(
     tenant: TenantCreate,
     # fetch current user to add as owner of tenant
     current_user: User = Depends(get_current_user),
