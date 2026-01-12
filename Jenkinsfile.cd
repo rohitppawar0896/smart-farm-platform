@@ -9,6 +9,14 @@ pipeline {
             }
         }
 
+        stage('Prepare Environment') {
+            steps {
+                withCredentials([file(credentialsId: 'smartfarm-env', variable: 'ENV_FILE')]) {
+                    bat 'copy %ENV_FILE% backend\\.env'
+                }
+            }
+        }
+
         stage('Stop Existing Containers') {
             steps {
                 bat 'docker compose -f backend/docker-compose.yml down || exit 0'
