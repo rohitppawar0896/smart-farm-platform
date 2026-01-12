@@ -2,8 +2,11 @@ pipeline {
     agent any
 
     environment {
-        COMPOSE_FILE = "backend/docker-compose.yml"
         APP_NAME     = "smartfarm-api"
+        COMPOSE_FILE = "backend/docker-compose.yml"
+
+        // Semantic versioning using Jenkins build number
+        APP_VERSION  = "1.0.${BUILD_NUMBER}"
     }
 
     stages {
@@ -25,6 +28,15 @@ pipeline {
             }
         }
 
+        stage('Build Versioned Image') {
+            steps {
+                bat '''
+                echo Building Docker image version %APP_VERSION%
+                docker build -t %APP_NAME%:%APP_VERSION% backend
+                '''
+            }
+        }
+
         stage('Backup Current Image') {
             steps {
                 bat '''
@@ -36,17 +48,23 @@ pipeline {
             }
         }
 
+        stage('Tag New Image as Current') {
+            steps {
+                bat '''
+                echo Tagging %APP_VERSION% as current
+                docker tag %APP_NAME%:%APP_VERSION% %APP_NAME%:current
+                '''
+            }
+        }
+
         stage('Deploy New Version') {
             steps {
                 bat '''
                 echo Stopping existing containers
                 docker compose -f %COMPOSE_FILE% down || exit /b 0
 
-                echo Building and starting new containers
-                docker compose -f %COMPOSE_FILE% up -d --build
-
-                echo Tagging new image as current
-                docker tag backend-api %APP_NAME%:current
+                echo Starting containers with new version
+                docker compose -f %COMPOSE_FILE% up -d
                 '''
             }
         }
@@ -54,7 +72,7 @@ pipeline {
         stage('Health Check') {
             steps {
                 bat '''
-                echo Waiting 20 seconds for application startup
+                echo Waiting for application startup
                 powershell -Command "Start-Sleep -Seconds 20"
 
                 echo Checking health endpoint
@@ -63,17 +81,16 @@ pipeline {
                 '''
             }
         }
-
     }
 
     post {
 
         success {
-            echo 'Deployment successful'
+            echo "Deployment successful. Version deployed: ${APP_VERSION}"
         }
 
         failure {
-            echo 'Deployment failed. Rolling back...'
+            echo "Deployment failed. Rolling back..."
 
             bat '''
             docker compose -f %COMPOSE_FILE% down || exit /b 0
