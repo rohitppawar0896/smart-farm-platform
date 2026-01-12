@@ -1,6 +1,11 @@
 pipeline {
     agent any
 
+    environment {
+        COMPOSE_FILE = "backend/docker-compose.yml"
+        APP_NAME     = "smartfarm-api"
+    }
+
     stages {
 
         stage('Checkout Code') {
@@ -12,7 +17,10 @@ pipeline {
         stage('Prepare Environment') {
             steps {
                 withCredentials([file(credentialsId: 'smartfarm-env', variable: 'ENV_FILE')]) {
-                    bat 'copy %ENV_FILE% backend\\.env'
+                    bat '''
+                    echo Preparing .env file
+                    copy %ENV_FILE% backend\\.env
+                    '''
                 }
             }
         }
@@ -20,53 +28,67 @@ pipeline {
         stage('Backup Current Image') {
             steps {
                 bat '''
-                docker image inspect smartfarm-api:current >nul 2>&1 && ^
-                docker tag smartfarm-api:current smartfarm-api:previous || ^
-                echo No previous image found
+                docker image inspect %APP_NAME%:current >nul 2>&1
+                IF %ERRORLEVEL% EQU 0 (
+                    echo Backing up current image
+                    docker tag %APP_NAME%:current %APP_NAME%:previous
+                ) ELSE (
+                    echo No existing image to back up
+                )
                 '''
             }
         }
 
         stage('Deploy New Version') {
             steps {
-                bat 'docker compose -f backend/docker-compose.yml up -d --build'
+                bat '''
+                echo Stopping existing containers
+                docker compose -f %COMPOSE_FILE% down
+
+                echo Building and starting new containers
+                docker compose -f %COMPOSE_FILE% up -d --build
+
+                echo Tagging new image as current
+                docker tag backend-api %APP_NAME%:current
+                '''
             }
         }
 
         stage('Health Check') {
             steps {
                 bat '''
-                powershell -Command "
-                $maxAttempts = 10
-                for ($i=1; $i -le $maxAttempts; $i++) {
-                    try {
-                        Invoke-WebRequest http://127.0.0.1:8000/health -UseBasicParsing -TimeoutSec 5
-                        Write-Host 'Health check PASSED'
-                        exit 0
-                    } catch {
-                        Write-Host 'Waiting for app...'
-                        Start-Sleep 5
-                    }
-                }
-                exit 1
-                "
+                echo Waiting for application startup
+                timeout /t 15 /nobreak
+
+                powershell -Command ^
+                "Invoke-WebRequest http://127.0.0.1:8000/health -UseBasicParsing"
                 '''
             }
         }
     }
 
     post {
-        failure {
-            echo 'Deployment failed. Rolling back...'
-            bat '''
-            docker compose -f backend/docker-compose.yml down
-            docker tag smartfarm-api:previous smartfarm-api:current
-            docker compose -f backend/docker-compose.yml up -d
-            '''
-        }
 
         success {
-            echo 'Deployment successful. Rollback not required.'
+            echo 'Deployment successful'
+        }
+
+        failure {
+            echo 'Deployment failed. Rolling back...'
+
+            bat '''
+            docker compose -f %COMPOSE_FILE% down
+
+            docker image inspect %APP_NAME%:previous >nul 2>&1
+            IF %ERRORLEVEL% EQU 0 (
+                echo Restoring previous image
+                docker tag %APP_NAME%:previous %APP_NAME%:current
+            ) ELSE (
+                echo No previous image found, skipping rollback
+            )
+
+            docker compose -f %COMPOSE_FILE% up -d
+            '''
         }
     }
 }
