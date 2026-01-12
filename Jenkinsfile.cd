@@ -54,14 +54,16 @@ pipeline {
         stage('Health Check') {
             steps {
                 bat '''
-                echo Waiting for application startup
-                timeout /t 15 /nobreak
+                echo Waiting 20 seconds for application startup
+                powershell -Command "Start-Sleep -Seconds 20"
 
+                echo Checking health endpoint
                 powershell -Command ^
                 "Invoke-WebRequest http://127.0.0.1:8000/health -UseBasicParsing"
                 '''
             }
         }
+
     }
 
     post {
