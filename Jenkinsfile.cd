@@ -17,13 +17,17 @@ pipeline {
             }
         }
 
-        stage('Stop Existing Containers') {
+        stage('Backup Current Image') {
             steps {
-                bat 'docker compose -f backend/docker-compose.yml down || exit 0'
+                bat '''
+                docker image inspect smartfarm-api:current >nul 2>&1 && ^
+                docker tag smartfarm-api:current smartfarm-api:previous || ^
+                echo No previous image found
+                '''
             }
         }
 
-        stage('Start Application') {
+        stage('Deploy New Version') {
             steps {
                 bat 'docker compose -f backend/docker-compose.yml up -d --build'
             }
@@ -32,38 +36,37 @@ pipeline {
         stage('Health Check') {
             steps {
                 bat '''
-                    powershell -Command "
-                    $maxAttempts = 10
-                    $attempt = 1
-
-                    while ($attempt -le $maxAttempts) {
-                        try {
-                            Write-Host \"Health check attempt $attempt...\"
-                            Invoke-WebRequest http://127.0.0.1:8000/health -UseBasicParsing -TimeoutSec 5
-                            Write-Host \"Health check PASSED\"
-                            exit 0
-                        } catch {
-                            Write-Host \"Health check failed, retrying in 5 seconds...\"
-                            Start-Sleep -Seconds 5
-                            $attempt++
-                        }
+                powershell -Command "
+                $maxAttempts = 10
+                for ($i=1; $i -le $maxAttempts; $i++) {
+                    try {
+                        Invoke-WebRequest http://127.0.0.1:8000/health -UseBasicParsing -TimeoutSec 5
+                        Write-Host 'Health check PASSED'
+                        exit 0
+                    } catch {
+                        Write-Host 'Waiting for app...'
+                        Start-Sleep 5
                     }
-
-                    Write-Host \"Health check FAILED after $maxAttempts attempts\"
-                    exit 1
-                    "
+                }
+                exit 1
+                "
                 '''
             }
         }
-
     }
 
     post {
-        success {
-            echo 'Deployment successful'
-        }
         failure {
-            echo 'Deployment failed'
+            echo 'Deployment failed. Rolling back...'
+            bat '''
+            docker compose -f backend/docker-compose.yml down
+            docker tag smartfarm-api:previous smartfarm-api:current
+            docker compose -f backend/docker-compose.yml up -d
+            '''
+        }
+
+        success {
+            echo 'Deployment successful. Rollback not required.'
         }
     }
 }
