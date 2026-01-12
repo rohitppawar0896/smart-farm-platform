@@ -11,13 +11,13 @@ pipeline {
 
         stage('Stop Existing Containers') {
             steps {
-                bat 'docker compose down || exit 0'
+                bat 'docker compose -f backend/docker-compose.yml down || exit 0'
             }
         }
 
         stage('Start Application') {
             steps {
-                bat 'docker compose up -d --build'
+                bat 'docker compose -f backend/docker-compose.yml up -d --build'
             }
         }
 
