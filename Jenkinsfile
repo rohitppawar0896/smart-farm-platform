@@ -11,7 +11,7 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t smartfarm-api ./backend'
+                bat 'docker build -t smartfarm-api backend'
             }
         }
     }
