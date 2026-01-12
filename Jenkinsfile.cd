@@ -31,7 +31,9 @@ pipeline {
 
         stage('Health Check') {
             steps {
-                bat 'curl http://localhost:8000/health'
+                    bat '''
+                        powershell -Command "Invoke-WebRequest http://127.0.0.1:8000/health -UseBasicParsing"
+                    '''
             }
         }
     }
