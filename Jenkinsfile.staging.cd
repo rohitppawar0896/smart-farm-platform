@@ -18,7 +18,7 @@ pipeline {
             steps {
                 copyArtifacts(
                     projectName: 'CI',
-                    selector: lastSuccessfulBuild(),
+                    selector: lastSuccessful(),
                     filter: 'image.env'
                 )
                 script {
