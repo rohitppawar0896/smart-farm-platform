@@ -40,7 +40,7 @@ pipeline {
                 withCredentials([file(credentialsId: 'smartfarm-env-prod', variable: 'ENV_FILE')]) {
                     bat '''
                     echo Preparing production .env file
-                    copy %ENV_FILE% backend\\deploy\\production\\.env.prod
+                    copy %ENV_FILE% backend\\deploy\\prod\\.env.prod
                     '''
                 }
             }
@@ -48,7 +48,7 @@ pipeline {
 
         stage('Deploy to Production') {
             steps {
-                dir('backed/deploy/production') {
+                dir('backed/deploy/prod') {
                     bat '''
                     echo Deploying image %APP_NAME%:%IMAGE_TAG%
                     docker compose -f docker-compose.prod.yml down || exit /b 0
@@ -93,7 +93,7 @@ pipeline {
               for /f "tokens=2 delims==" %%i in (%STATE_FILE%) do set ROLLBACK_TAG=%%i
               echo Rolling back to %ROLLBACK_TAG%
 
-              cd deploy\\production
+              cd backend\\deploy\\prod
               docker compose down || exit /b 0
               set IMAGE_TAG=%ROLLBACK_TAG%
               docker compose up -d
