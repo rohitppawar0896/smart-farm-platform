@@ -85,7 +85,7 @@ pipeline {
             echo "Production deployment successful. Image: ${IMAGE_TAG}"
         }
         failure {
-            echo "Production failed – rolling back"
+            echo "Production failed - rolling back"
 
             bat '''
             if exist %STATE_FILE% (

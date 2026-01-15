@@ -1,4 +1,5 @@
 from fastapi import APIRouter
+import os
 
 router = APIRouter()
 
@@ -7,5 +8,6 @@ router = APIRouter()
 def health_check():
     return {
         "status": "ok",
-        "services": "smart-farm-platform"
+        "services": "smart-farm-platform",
+        "version": os.getenv("APP_VERSION")
     }

@@ -14,11 +14,20 @@ pipeline {
             }
         }
 
+        stage('Read App Version') {
+            steps {
+                script {
+                    env.APP_BASE_VERSION = readFile('VERSION').trim()
+                    env.APP_VERSION = "${env.APP_BASE_VERSION}.${env.BUILD_NUMBER}"
+                }
+            }
+        }
+
         stage('Build Docker Image') {
             steps {
                 bat """
                 echo Building Docker image %IMAGE_NAME%:%IMAGE_TAG%
-                docker build -t %IMAGE_NAME%:%IMAGE_TAG% backend
+                docker build --build-arg APP_VERSION=%APP_VERSION% -t %IMAGE_NAME%:%IMAGE_TAG% backend
                 """
             }
         }
