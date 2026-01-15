@@ -55,19 +55,16 @@ pipeline {
 
         stage('Verify Health') {
             steps {
-                timeout(time: 2, unit: 'MINUTES') {
-                    waitUntil {
-                        script {
-                            def status = bat(
-                                script: "docker inspect --format=\"{{.State.Health.Status}}\" smartfarm-api-staging",
-                                returnStdout: true
-                            ).trim()
-                            return status == "healthy"
-                        }
-                    }
-                }
+                bat '''
+                echo Waiting 15 seconds for application startup
+                timeout /t 15 >nul
+
+                echo Checking staging health endpoint
+                curl http://localhost:8001/health || exit /b 1
+                '''
             }
         }
+
 
         stage('Persist Successful Version') {
             steps {
