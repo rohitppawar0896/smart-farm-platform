@@ -3,6 +3,7 @@ pipeline {
 
     environment {
         APP_NAME = "smartfarm-backend"
+        STATE_FILE = "last_successful_staging.env"
     }
 
     stages {
@@ -63,15 +64,36 @@ pipeline {
                 }
             }
         }
+
+        stage('Persist Successful Version') {
+            steps {
+                bat '''
+                echo IMAGE_TAG=%IMAGE_TAG% > %STATE_FILE%
+                '''
+            }
+        }
     }
 
     post {
         success {
             echo "Staging deployment successful. Image: ${IMAGE_TAG}"
         }
-
         failure {
-            echo "Staging deployment failed."
+            echo "Staging failed – rolling back"
+
+            bat '''
+            if exist %STATE_FILE% (
+              for /f "tokens=2 delims==" %%i in (%STATE_FILE%) do set ROLLBACK_TAG=%%i
+              echo Rolling back to %ROLLBACK_TAG%
+
+              cd deploy\\staging
+              docker compose down || exit /b 0
+              set IMAGE_TAG=%ROLLBACK_TAG%
+              docker compose up -d
+            ) else (
+              echo No rollback version available
+            )
+            '''
         }
     }
 }
