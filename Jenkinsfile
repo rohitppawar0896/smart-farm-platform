@@ -45,6 +45,7 @@ pipeline {
         success {
             echo "CI build successful. Image tag: ${IMAGE_TAG}"
             archiveArtifacts artifacts: 'image.env', fingerprint: true
+            build job: 'smartfarm-cd-Staging', wait: false
         }
 
         failure {
