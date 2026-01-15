@@ -8,7 +8,7 @@ services:
       - postgres_prod_data:/var/lib/postgresql/data
 
   api:
-    image: smartfarm-backend:${IMAGE_TAG}
+    image: smartfarm-api:${IMAGE_TAG}
     container_name: smartfarm-api-prod
     env_file:
       - .env.prod
