@@ -23,7 +23,8 @@ pipeline {
                 )
                 script {
                     def props = readProperties file: 'image.env'
-                    env.IMAGE_TAG = props.IMAGE_TAG
+                    env.IMAGE_TAG = props.IMAGE_TAG.trim()
+                    echo "Loaded IMAGE_TAG=${env.IMAGE_TAG}"
                 }
             }
         }
