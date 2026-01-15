@@ -18,7 +18,7 @@ pipeline {
             steps {
                 copyArtifacts(
                     projectName: 'CI',
-                    selector: lastSuccessful(),
+                    selector: lastSuccessfulBuild(),
                     filter: 'image.env'
                 )
                 script {
@@ -82,7 +82,7 @@ pipeline {
             echo "Staging deployment successful. Image: ${IMAGE_TAG}"
         }
         failure {
-            echo "Staging failed – rolling back"
+            echo "Staging failed - rolling back"
 
             bat '''
             if exist %STATE_FILE% (
