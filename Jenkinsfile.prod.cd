@@ -47,12 +47,12 @@ pipeline {
 
         stage('Deploy to Production') {
             steps {
-                dir('deploy/production') {
+                dir('backed/deploy/production') {
                     bat '''
                     echo Deploying image %APP_NAME%:%IMAGE_TAG%
-                    docker compose down || exit /b 0
+                    docker compose -f docker-compose.prod.yml down || exit /b 0
                     set IMAGE_TAG=%IMAGE_TAG%
-                    docker compose up -d
+                    docker compose -f docker-compose.prod.yml up -d
                     '''
                 }
             }
