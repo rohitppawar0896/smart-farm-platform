@@ -33,7 +33,7 @@ pipeline {
                 withCredentials([file(credentialsId: 'smartfarm-env-staging', variable: 'ENV_FILE')]) {
                     bat '''
                     echo Preparing staging .env file
-                    copy %ENV_FILE% deploy\\staging\\.env.staging
+                    copy %ENV_FILE% backend\\deploy\\staging\\.env.staging
                     '''
                 }
             }

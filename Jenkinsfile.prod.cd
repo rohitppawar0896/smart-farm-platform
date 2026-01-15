@@ -39,7 +39,7 @@ pipeline {
                 withCredentials([file(credentialsId: 'smartfarm-env-prod', variable: 'ENV_FILE')]) {
                     bat '''
                     echo Preparing production .env file
-                    copy %ENV_FILE% deploy\\production\\.env.production
+                    copy %ENV_FILE% backend\\deploy\\production\\.env.prod
                     '''
                 }
             }
