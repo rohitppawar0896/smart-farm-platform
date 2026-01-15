@@ -63,7 +63,7 @@ pipeline {
             steps {
                 bat '''
                 echo Waiting 15 seconds for application startup
-                timeout /t 15 >nul
+                ping 127.0.0.1 -n 16 > nul
 
                 echo Checking staging health endpoint
                 curl http://localhost:8002/health || exit /b 1
