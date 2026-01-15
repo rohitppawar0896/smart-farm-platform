@@ -62,10 +62,13 @@ pipeline {
             steps {
                 timeout(time: 2, unit: 'MINUTES') {
                     waitUntil {
-                        bat(
-                            script: "docker inspect --format=\"{{.State.Health.Status}}\" smartfarm-api-prod",
-                            returnStdout: true
-                        ).trim() == "healthy"
+                        script {
+                            def status = bat(
+                                script: "docker inspect --format=\"{{.State.Health.Status}}\" smartfarm-api-prod",
+                                returnStdout: true
+                            ).trim()
+                            return status == "healthy"
+                        }
                     }
                 }
             }
