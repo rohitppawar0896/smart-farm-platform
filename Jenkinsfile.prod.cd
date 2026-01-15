@@ -1,0 +1,83 @@
+pipeline {
+    agent any
+
+    environment {
+        APP_NAME = "smartfarm-backend"
+    }
+
+    stages {
+
+        stage('Approval') {
+            steps {
+                input message: 'Approve deployment to PRODUCTION?'
+            }
+        }
+
+        stage('Checkout Code') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Load Image Tag from CI') {
+            steps {
+                copyArtifacts(
+                    projectName: 'CI',
+                    selector: lastSuccessful(),
+                    filter: 'image.env'
+                )
+                script {
+                    def props = readProperties file: 'image.env'
+                    env.IMAGE_TAG = props.IMAGE_TAG
+                }
+            }
+        }
+
+        stage('Prepare Environment') {
+            steps {
+                withCredentials([file(credentialsId: 'smartfarm-env-prod', variable: 'ENV_FILE')]) {
+                    bat '''
+                    echo Preparing production .env file
+                    copy %ENV_FILE% deploy\\production\\.env.production
+                    '''
+                }
+            }
+        }
+
+        stage('Deploy to Production') {
+            steps {
+                dir('deploy/production') {
+                    bat '''
+                    echo Deploying image %APP_NAME%:%IMAGE_TAG%
+                    docker compose down || exit /b 0
+                    set IMAGE_TAG=%IMAGE_TAG%
+                    docker compose up -d
+                    '''
+                }
+            }
+        }
+
+        stage('Verify Health') {
+            steps {
+                timeout(time: 2, unit: 'MINUTES') {
+                    waitUntil {
+                        bat(
+                            script: "docker inspect --format=\"{{.State.Health.Status}}\" smartfarm-api-prod",
+                            returnStdout: true
+                        ).trim() == "healthy"
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "Production deployment successful. Image: ${IMAGE_TAG}"
+        }
+
+        failure {
+            echo "Production deployment failed. Manual intervention required."
+        }
+    }
+}

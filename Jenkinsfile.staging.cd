@@ -1,0 +1,77 @@
+pipeline {
+    agent any
+
+    environment {
+        APP_NAME = "smartfarm-backend"
+    }
+
+    stages {
+
+        stage('Checkout Code') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Load Image Tag from CI') {
+            steps {
+                copyArtifacts(
+                    projectName: 'CI',
+                    selector: lastSuccessful(),
+                    filter: 'image.env'
+                )
+                script {
+                    def props = readProperties file: 'image.env'
+                    env.IMAGE_TAG = props.IMAGE_TAG
+                }
+            }
+        }
+
+        stage('Prepare Environment') {
+            steps {
+                withCredentials([file(credentialsId: 'smartfarm-env-staging', variable: 'ENV_FILE')]) {
+                    bat '''
+                    echo Preparing staging .env file
+                    copy %ENV_FILE% deploy\\staging\\.env.staging
+                    '''
+                }
+            }
+        }
+
+        stage('Deploy to Staging') {
+            steps {
+                dir('deploy/staging') {
+                    bat '''
+                    echo Deploying image %APP_NAME%:%IMAGE_TAG%
+                    docker compose down || exit /b 0
+                    set IMAGE_TAG=%IMAGE_TAG%
+                    docker compose up -d
+                    '''
+                }
+            }
+        }
+
+        stage('Verify Health') {
+            steps {
+                timeout(time: 2, unit: 'MINUTES') {
+                    waitUntil {
+                        bat(
+                            script: "docker inspect --format=\"{{.State.Health.Status}}\" smartfarm-api-staging",
+                            returnStdout: true
+                        ).trim() == "healthy"
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "Staging deployment successful. Image: ${IMAGE_TAG}"
+        }
+
+        failure {
+            echo "Staging deployment failed."
+        }
+    }
+}

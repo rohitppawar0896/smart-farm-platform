@@ -1,0 +1,35 @@
+version: "3.8"
+
+services:
+  db:
+    image: postgres:15
+    container_name: smartfarm-db-staging
+    env_file:
+      - .env.staging
+    volumes:
+      - postgres_staging_data:/var/lib/postgresql/data
+
+  api:
+    image: smartfarm-backend:${IMAGE_TAG}
+    container_name: smartfarm-api-staging
+    env_file:
+      - .env.staging
+    depends_on:
+      - db
+    ports:
+      - "8001:8000"
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  postgres_staging_data:
