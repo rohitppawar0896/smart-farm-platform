@@ -17,7 +17,7 @@ pipeline {
         stage('Load Image Tag from CI') {
             steps {
                 copyArtifacts(
-                    projectName: 'CI',
+                    projectName: 'smartfarm-ci',
                     selector: lastSuccessful(),
                     filter: 'image.env'
                 )
