@@ -18,7 +18,7 @@ router = APIRouter(
 def create_farm(
     farm_data: FarmCreate,
     db: Session = Depends(get_db),
-    context=Depends(require_roles(TenantRole.OWNER)),
+    context=Depends(require_roles(TenantRole.OWNER, TenantRole.ADMIN)),
 ):
     return service.create_farm(
         db=db,
@@ -30,7 +30,8 @@ def create_farm(
 @router.get("/", response_model=list[FarmResponse])
 def list_farms(
     db: Session = Depends(get_db),
-    context=Depends(require_roles(TenantRole.OWNER)),
+    context=Depends(require_roles(TenantRole.OWNER,
+                    TenantRole.ADMIN, TenantRole.VIEWER)),
 ):
     return service.get_farms(
         db=db,
