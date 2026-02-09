@@ -11,7 +11,7 @@ class Farm(Base):
     id = Column(Integer, primary_key=True, index=True)
     tenant_id = Column(
         Integer,
-        ForeignKey("tenant.id", ondelete="CASCADE"),
+        ForeignKey("tenants.id", ondelete="CASCADE"),
         nullable=False,
         index=True
     )
