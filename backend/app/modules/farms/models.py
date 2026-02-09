@@ -6,7 +6,7 @@ from app.common.models import Base
 
 
 class Farm(Base):
-    __taablename__ = "farms"
+    __tablename__ = "farms"
 
     id = Column(Integer, primary_key=True, index=True)
     tenant_id = Column(
