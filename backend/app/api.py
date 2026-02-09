@@ -4,6 +4,8 @@ from app.modules.tenants.routes import router as tenant_router
 from app.modules.users.routes import router as user_router
 from app.modules.auth.routes import router as auth_router
 from app.core.health import router as health_router
+from app.modules.farms.router import router as farm_router
+
 
 router = APIRouter()
 
@@ -19,3 +21,6 @@ router.include_router(user_router)
 
 # route to create jwt token
 router.include_router(auth_router)
+
+# route to access tenat related routs/apis
+router.include_router(farm_router)
